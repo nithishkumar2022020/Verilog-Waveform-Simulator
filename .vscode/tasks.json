@@ -1,0 +1,81 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: esbuild",
+      "type": "npm",
+      "script": "esbuild",
+      "problemMatcher": {
+        "owner": "javascript",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(error|warning|info):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "npm: esbuild-watch",
+      "type": "npm",
+      "script": "esbuild-watch",
+      "problemMatcher": {
+        "owner": "esbuild-watch",
+        "pattern": {
+          "regexp": "^(.*?):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*esbuild .*",
+          "endsPattern": "^⚡ Done"
+        }
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "group": "build"
+    },
+    {
+      "label": "npm: esbuild-build",
+      "type": "npm",
+      "script": "esbuild-build",
+      "problemMatcher": {
+        "owner": "javascript",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(error|warning|info):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "esbuild-build",
+      "type": "shell",
+      "command": "npm run esbuild-build",
+      "problemMatcher": ["$tsc"],
+      "group": "build"
+    }
+  ]
+} 

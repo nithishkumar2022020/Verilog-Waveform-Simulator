@@ -1,0 +1,5 @@
+{
+  "verilog-simulator.generateWaveform.title": "Generate Waveform",
+  "verilog-simulator.regenerateVcd.title": "Regenerate VCD File (Robust Mode)",
+  "verilog-simulator.clearCache.title": "Clear Environment Cache"
+} 

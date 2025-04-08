@@ -1,0 +1,47 @@
++-----------------------------------------------------+
+|                   VS Code IDE                        |
++-----------------------------------------------------+
+                        |
+                        v
++-----------------------------------------------------+
+|             Verilog Waveform Analyzer                |
++---------------------+-----------------------------+
+|                     |                             |
+v                     v                             v
++---------------+  +------------------+  +-------------------+
+| VS Code       |  | Verilog          |  | Visualization     |
+| Integration   |  | Integration      |  | Layer             |
++---------------+  +------------------+  +-------------------+
+| - Commands    |  | - Compilation    |  | - Webview Panel   |
+| - Menus       |  | - Simulation     |  | - Plotly.js       |
+| - Events      |  | - Tool Detection |  | - Signal Tree     |
+| - Output      |  | - VCD Generation |  | - Interactive UI  |
++---------------+  +------------------+  +-------------------+
+        |                  |                     |
+        v                  v                     v
++---------------+  +------------------+  +-------------------+
+| Extension     |  | VCD Parser       |  | HTML/CSS/JS       |
+| Core          |  |                  |  | Generation        |
++---------------+  +------------------+  +-------------------+
+| - Activation  |  | - Signal         |  | - Dynamic Content |
+| - Coordination|  |   Extraction     |  | - Theme           |
+| - Error       |  | - Hierarchy      |  |   Integration     |
+|   Handling    |  |   Building       |  | - Responsive      |
++---------------+  +------------------+  +-------------------+
+                        |
+                        v
++-----------------------------------------------------+
+|              Robust VCD Generator                    |
++-----------------------------------------------------+
+| - Testbench Enhancement                             |
+| - Fallback Mechanisms                               |
+| - Minimal VCD Generation                            |
++-----------------------------------------------------+
+                        |
+                        v
++-----------------------------------------------------+
+|                 External Tools                       |
++-----------------------------------------------------+
+| - Icarus Verilog (iverilog, vvp)                    |
+| - User's Shell Environment                           |
++-----------------------------------------------------+ 

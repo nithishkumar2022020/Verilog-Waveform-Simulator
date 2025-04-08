@@ -1,0 +1,96 @@
+{
+  "name": "verilog-waveform-simulator",
+  "displayName": "Verilog Waveform Simulator",
+  "description": "Generate and visualize waveforms from Verilog testbenches",
+  "version": "0.1.0",
+  "publisher": "nithishkumar2022020",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nithishkumar2022020/Verilog-Waveform-Simulator"
+  },
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onLanguage:verilog",
+    "onCommand:verilog-simulator.generateWaveform",
+    "onCommand:verilog-simulator.regenerateVcd",
+    "onCommand:verilog-simulator.clearCache"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "verilog-simulator.generateWaveform",
+        "title": "Generate Waveform"
+      },
+      {
+        "command": "verilog-simulator.regenerateVcd",
+        "title": "Regenerate VCD File (Robust Mode)"
+      },
+      {
+        "command": "verilog-simulator.clearCache",
+        "title": "Clear Environment Cache"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == verilog",
+          "command": "verilog-simulator.generateWaveform",
+          "group": "verilog"
+        },
+        {
+          "when": "resourceLangId == verilog",
+          "command": "verilog-simulator.regenerateVcd",
+          "group": "verilog"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "verilog",
+        "aliases": ["Verilog", "verilog"],
+        "extensions": [".v", ".vh", ".sv"]
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./extension.js --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+    "esbuild-build": "npm run esbuild-base -- --sourcemap"
+  },
+  "dependencies": {
+    "plotly.js-dist": "^2.18.2"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^16.11.7",
+    "@types/mocha": "^9.1.1",
+    "@types/glob": "^7.1.4",
+    "esbuild": "^0.15.15",
+    "eslint": "^8.14.0",
+    "glob": "^7.2.0",
+    "mocha": "^9.2.2",
+    "vscode-test": "^1.6.1"
+  },
+  "keywords": [
+    "verilog",
+    "waveform",
+    "simulation",
+    "vcd",
+    "visualization"
+  ],
+  "author": "Nithish Kumar",
+  "license": "MIT"
+}
