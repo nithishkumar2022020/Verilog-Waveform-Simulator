@@ -1,0 +1,17 @@
+{
+  "extends": "eslint:recommended",
+  "env": { "node": true, "es2021": true },
+  "ignorePatterns": ["dist/"],
+  "overrides": [
+    {
+      "files": ["test/**/*.test.js"],
+      "globals": {
+        "suite": "readonly",
+        "suiteSetup": "readonly",
+        "setup": "readonly",
+        "teardown": "readonly",
+        "test": "readonly"
+      }
+    }
+  ]
+}

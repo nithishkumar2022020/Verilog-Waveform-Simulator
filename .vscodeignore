@@ -10,11 +10,12 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 out
-node_modules
 .vscode-test.js
 .vscode-test.mjs
-.verilog-simulator/**
-verilog-simulator.code-workspace
+**/.verilog-simulator/**
+verilog-analyzer.code-workspace
 .github/**
-documentation/images/*.txt
-verilog-simulator-qwen/ 
+documentation/**
+verilog-simulator-qwen/
+samples/**/*_sim
+samples/**/*.bak

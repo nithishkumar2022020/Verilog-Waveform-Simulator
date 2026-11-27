@@ -1,79 +1,56 @@
 # Verilog Waveform Simulator
 
-![Verilog Waveform](https://raw.githubusercontent.com/nithishkumar2022020/Verilog-Waveform-Simulator/main/images/screenshot.png)
+Run an Icarus Verilog testbench and inspect its signals in VS Code. The waveform viewer works offline after installation.
 
-A VS Code extension that provides robust Verilog simulation and waveform visualization directly within your editor.
+![JK flip-flop waveform and signal hierarchy](images/screenshot.png)
 
-## Features
+## Get started
 
-- **One-Click Simulation** - Run Verilog simulations with a single click
-- **Interactive Waveform Visualization** - View and analyze signal waveforms
-- **Smart Testbench Detection** - Automatically finds and uses testbenches
-- **Hierarchical Signal Display** - Easily navigate complex designs
-- **Bulletproof VCD Generation** - Multiple fallback mechanisms ensure you always get a waveform
+If you have a pilot `.vsix`, open the VS Code Extensions view, choose **Install from VSIX** from the menu, and select the file. Download or clone this repository to get the sample projects.
 
-## Requirements
+1. Install [Icarus Verilog](https://steveicarus.github.io/iverilog/usage/installation.html) on the machine where VS Code runs the extension. For a WSL or SSH workspace, install it in that environment. On a shared lab computer, ask the lab administrator to provide Icarus Verilog.
+2. In the VS Code terminal, check that `iverilog -V` and `vvp -V` both run. If you install the tools while VS Code is open, restart VS Code so it picks up the updated PATH.
+3. Open `samples/jk_flipflop/jk_ff.v` or `jk_ff_tb.v` in a trusted workspace. Right-click the editor and choose **Generate Waveform**.
+4. Expand `jk_ff_tb` and its `uut` scope to inspect `clk`, `reset`, and `q`. This testbench starts with reset asserted and releases it at 15 ns.
 
-- VS Code 1.60.0 or higher
-- Icarus Verilog (for simulation)
+## Run your own design
 
-## Installation
+- Use saved `.v` or `.sv` files. For automatic pairing, put `design.v` and `design_tb.v` in the same directory. A self-contained testbench can also be simulated by itself.
+- Write one VCD with a relative filename such as `$dumpfile("wave.vcd");` and record your testbench with `$dumpvars(0, design_tb);`. End a finite test with `$finish;`. A sample is available in [`jk_ff_tb.v`](samples/jk_flipflop/jk_ff_tb.v).
+- Compilation starts in the source directory. Simulation starts in a fresh temporary directory. Testbench file paths used at runtime, including paths passed to `$readmemh`, resolve from that temporary directory when relative. Use an absolute path for a required input file and a relative path for the VCD output.
+- **Regenerate VCD File** reruns the same simulation. Both commands display the result from the current run. Generated files are temporary.
+- Use **Clear Environment Cache** to rediscover the tools if their paths change. You can also set `IVERILOG_PATH` and `VVP_PATH` to executable paths in the environment that launches VS Code.
+- Check the **Verilog Simulator** output channel for compiler or runtime diagnostics. You can cancel a run from its progress notification or adjust the per-phase limit with `verilogSimulator.timeoutSeconds` in VS Code settings.
 
-### Install Icarus Verilog
+## Develop and test
 
-- **macOS**: `brew install icarus-verilog`
-- **Linux**: `sudo apt install iverilog` (Ubuntu/Debian) or `sudo yum install iverilog` (Fedora/RHEL)
-- **Windows**: Download and install from [http://bleyer.org/icarus/](http://bleyer.org/icarus/)
+Run `npm ci`, then press **F5** to run the extension in a VS Code Extension Development Host. With Icarus Verilog available, run `npm run test:simulation` for the parser and real simulator tests. Run `npm test` for those tests plus the VS Code command tests.
 
-### Install the Extension
+Released under the [MIT License](LICENSE).
 
-1. Open VS Code
-2. Go to Extensions view (Ctrl+Shift+X / Cmd+Shift+X)
-3. Search for "Verilog Waveform Simulator"
-4. Click Install
+## Configure a multi-file lab
 
-## Usage
+An instructor can commit the following settings in `.vscode/settings.json`. With this profile active, either waveform command runs the same assignment from any saved HDL source in that workspace folder.
 
-1. Open a Verilog file or testbench (`.v`, `.vh`, or `.sv`)
-2. Right-click in the editor and select "Generate Waveform"
-3. View the waveform visualization
+```json
+{
+  "verilogSimulator.project": {
+    "sources": ["rtl/counter.sv", "tests/counter_tb.sv"],
+    "top": "counter_tb",
+    "language": "2012",
+    "includeDirectories": ["rtl/include"],
+    "defines": ["WIDTH=8"],
+    "inputFiles": ["data/initial.hex"],
+    "dumpFile": "waves/counter.vcd"
+  }
+}
+```
 
-![Usage Animation](https://raw.githubusercontent.com/nithishkumar2022020/Verilog-Waveform-Simulator/main/images/usage.gif)
+Each field is optional. The simulator copies listed input files into the run directory at the same relative paths for tasks such as `$readmemh`. Set the testbench's `$dumpfile` to the configured dump filename. In a testbench with no waveform instrumentation, add this inside the top-level module, replacing `counter_tb` with its name.
 
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `Generate Waveform` | Simulate the current file and display waveform |
-| `Regenerate VCD File (Robust Mode)` | Force regeneration with maximum resilience |
-| `Clear Environment Cache` | Reset cached paths and environment variables |
-
-## Troubleshooting
-
-If the waveform generation fails:
-
-1. Try the "Regenerate VCD File (Robust Mode)" command
-2. Check the Verilog Simulator output panel for detailed logs
-3. Verify that Icarus Verilog is correctly installed and in your PATH
-4. Try clearing the environment cache
-
-## Sample Files
-
-The extension includes sample Verilog files in the `samples` directory:
-
-- JK flip-flop implementations
-- Testbenches with and without VCD generation
-- Examples of hierarchical designs
-
-## Release Notes
-
-### 0.1.0
-
-- Initial release
-- Basic waveform visualization
-- Robust VCD generation system
-- Hierarchical signal navigation
-
-## License
-
-This extension is licensed under the [MIT License](LICENSE). 
+```verilog
+initial begin
+    $dumpfile("waves/counter.vcd");
+    $dumpvars(0, counter_tb);
+end
+```
