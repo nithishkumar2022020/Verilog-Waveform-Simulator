@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const os = require('os');
 const path = require('path');
-const { runTests } = require('vscode-test');
+const { runTests } = require('@vscode/test-electron');
 
 async function main() {
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'verilog-extension-test-'));

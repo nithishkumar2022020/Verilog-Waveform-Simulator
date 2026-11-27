@@ -38,6 +38,7 @@ jobs:
       - if: runner.os != 'Linux'
         run: npm test
       - run: npx --yes @vscode/vsce@3.6.2 package -o classroom.vsix
+      - run: node test/install.js classroom.vsix
       - uses: actions/upload-artifact@v4
         with:
           name: extension-${{ runner.os }}
