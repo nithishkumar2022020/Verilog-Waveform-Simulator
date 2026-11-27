@@ -2,54 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Extension",
+      "name": "Run extension",
       "type": "extensionHost",
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}"
       ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
       "preLaunchTask": "npm: esbuild-build"
-    },
-    {
-      "name": "Run Extension",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "--extensionDevelopmentPath=/Users/reddyvarinithishkumarreddy/verilog-analyzer-qwen",
-        "--disable-extensions",
-        "--new-window"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
-      "preLaunchTask": "npm: esbuild-build",
-      "sourceMaps": true,
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ],
-      "cwd": "/Users/reddyvarinithishkumarreddy/verilog-analyzer-qwen"
-    },
-    {
-      "name": "Extension Tests",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "--extensionDevelopmentPath=/Users/reddyvarinithishkumarreddy/verilog-analyzer-qwen",
-        "--extensionTestsPath=${workspaceFolder}/test/suite/index",
-        "--disable-extensions"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
-      "preLaunchTask": "npm: esbuild-build",
-      "sourceMaps": true,
-      "cwd": "/Users/reddyvarinithishkumarreddy/verilog-analyzer-qwen"
     }
   ]
-} 
+}

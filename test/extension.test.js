@@ -1,45 +1,43 @@
-const assert = require('assert');
+const assert = require('assert').strict;
 const vscode = require('vscode');
 const path = require('path');
-const fs = require('fs');
+const manifest = require('../package.json');
 
-suite('Extension Test Suite', function() {
-  this.timeout(10000); // Extension activation can take time
-  
-  test('Extension should be present', () => {
-    assert.ok(vscode.extensions.getExtension('verilog-analyzer'));
-  });
+suite('VS Code extension', function () {
+  this.timeout(30000);
 
-  test('Activation', async () => {
-    const extension = vscode.extensions.getExtension('verilog-analyzer');
+  suiteSetup(async () => {
+    const extension = vscode.extensions.getExtension(`${manifest.publisher}.${manifest.name}`);
+    assert.ok(extension, 'The VS Code host did not load the extension.');
     await extension.activate();
-    assert.ok(true);
   });
 
-  test('Command should be registered', async () => {
-    const commands = await vscode.commands.getCommands();
-    assert.ok(commands.includes('verilog-analyzer.generateWaveform'));
+  test('registers both waveform commands', async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(commands.includes('verilog-simulator.generateWaveform'));
+    assert.ok(commands.includes('verilog-simulator.regenerateVcd'));
   });
 
-  // This test is skipped as it requires Icarus Verilog to be installed
-  // and involves file operations and simulation
-  test.skip('Generate waveform for sample counter', async () => {
-    // Load sample counter testbench
-    const samplePath = path.join(__dirname, '..', 'samples', 'counter_tb.v');
-    assert.ok(fs.existsSync(samplePath), 'Sample testbench file not found');
-    
-    const document = await vscode.workspace.openTextDocument(samplePath);
-    await vscode.window.showTextDocument(document);
-
-    // Execute the command
-    await vscode.commands.executeCommand('verilog-analyzer.generateWaveform');
-    
-    // Wait for simulation to complete
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Check if VCD file was generated
-    const workspaceFolder = vscode.workspace.workspaceFolders[0];
-    const vcdPath = path.join(workspaceFolder.uri.fsPath, '.verilog-analyzer', 'counter_tb.vcd');
-    assert.ok(fs.existsSync(vcdPath), 'VCD file not generated');
+  test('opens the waveform from either command', async () => {
+    const file = path.resolve(__dirname, '../samples/jk_flipflop/jk_ff.v');
+    const document = await vscode.workspace.openTextDocument(file);
+    for (const command of ['generateWaveform', 'regenerateVcd']) {
+      await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+      const focusDeadline = Date.now() + 5000;
+      while (vscode.window.activeTextEditor?.document !== document && Date.now() < focusDeadline) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      await vscode.commands.executeCommand('verilog-simulator.' + command,
+        command === 'regenerateVcd' ? document.uri : undefined);
+      let tab;
+      const deadline = Date.now() + 5000;
+      while (!tab && Date.now() < deadline) {
+        tab = vscode.window.tabGroups.all.flatMap(group => group.tabs)
+          .find(item => item.label === 'Waveform: jk_ff_tb.v');
+        if (!tab) await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      assert.ok(tab, `No waveform opened after ${command}.`);
+      await vscode.window.tabGroups.close(tab);
+    }
   });
-}); 
+});

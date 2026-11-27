@@ -1,251 +1,119 @@
-/**
- * Simple VCD (Value Change Dump) parser
- */
-
 const fs = require('fs');
 
-/**
- * Parse VCD file content
- * @param {string} content - VCD file content
- * @returns {Object} Parsed VCD data
- */
 function parse(content) {
-  const lines = content.split(/\r?\n/);
-  
-  const result = {
-    timescale: '',
-    date: '',
-    version: '',
-    comment: '',
-    signals: [],
-    valueChanges: {},
-    hierarchy: {} // Added to track hierarchical relationships
-  };
-  
-  const scopeStack = [];
-  let currentScope = '';
-  let inDefinitionSection = true;
-  let currentTime = 0;
-  const symbolMap = {};
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    if (line === '') continue;
-    
-    // Parse header information
-    if (line.startsWith('$date')) {
-      result.date = extractUntil(lines, i, '$end');
-      continue;
+  const tokens = content.matchAll(/\S+/g);
+  const next = () => tokens.next().value?.[0];
+  const result = { timescale: '', date: '', version: '', comment: '', signals: [], endTime: 0 };
+  const scopes = [];
+  const streams = new Map();
+  function readDirective(directive) {
+    const args = [];
+    for (let token = next(); token !== '$end'; token = next()) {
+      if (token === undefined) throw new Error(`Unterminated VCD directive ${directive}.`);
+      args.push(token);
     }
-    
-    if (line.startsWith('$version')) {
-      result.version = extractUntil(lines, i, '$end');
-      continue;
+    return args;
+  }
+
+  let definitionsComplete = false;
+  for (let directive = next(); directive !== undefined; directive = next()) {
+    const args = readDirective(directive);
+    if (directive === '$enddefinitions') {
+      if (args.length || scopes.length) throw new Error('Invalid end of VCD definitions.');
+      definitionsComplete = true;
+      break;
     }
-    
-    if (line.startsWith('$timescale')) {
-      result.timescale = extractUntil(lines, i, '$end');
-      continue;
-    }
-    
-    if (line.startsWith('$comment')) {
-      result.comment = extractUntil(lines, i, '$end');
-      continue;
-    }
-    
-    // Parse scope information
-    if (line.startsWith('$scope')) {
-      const parts = line.split(' ');
-      if (parts.length >= 3) {
-        const scope = parts[2];
-        scopeStack.push(scope);
-        currentScope = scopeStack.join('.');
-        
-        // Add to hierarchy tracking
-        let currentHierarchy = result.hierarchy;
-        for (const scopePart of scopeStack) {
-          if (!currentHierarchy[scopePart]) {
-            currentHierarchy[scopePart] = {};
-          }
-          currentHierarchy = currentHierarchy[scopePart];
-        }
+    switch (directive) {
+      case '$date':
+      case '$version':
+      case '$comment':
+        result[directive.slice(1)] = args.join(' ');
+        break;
+      case '$timescale': {
+        const scale = args.join('').match(/^(1|10|100)(s|ms|us|ns|ps|fs)$/);
+        if (!scale) throw new Error('Invalid VCD timescale.');
+        result.timescale = scale[0];
+        break;
       }
-      continue;
-    }
-    
-    if (line.startsWith('$upscope')) {
-      scopeStack.pop();
-      currentScope = scopeStack.join('.');
-      continue;
-    }
-    
-    // Parse variable declarations
-    if (line.startsWith('$var')) {
-      const parts = line.split(/\s+/);
-      if (parts.length >= 5) {
-        const type = parts[1];
-        const width = parseInt(parts[2]);
-        const id = parts[3];
-        let name = parts[4];
-        
-        // Handle signals with array indices
-        if (parts.length > 5 && parts[5].startsWith('[') && !parts[5].endsWith(']')) {
-          // Combine parts that form array indices
-          let j = 5;
-          while (j < parts.length && !parts[j].endsWith(']')) {
-            name += ' ' + parts[j];
-            j++;
-          }
-          if (j < parts.length) {
-            name += ' ' + parts[j];
-          }
+      case '$scope':
+        if (args.length !== 2) throw new Error('Invalid VCD scope declaration.');
+        scopes.push(args[1]);
+        break;
+      case '$upscope':
+        if (args.length || scopes.length === 0) throw new Error('Unbalanced VCD scopes.');
+        scopes.pop();
+        break;
+      case '$var': {
+        const [type, size, id, reference, ...range] = args;
+        const width = Number(size);
+        if (!reference || !/^\d+$/.test(size) || !Number.isSafeInteger(width) || width < 1) {
+          throw new Error('Invalid VCD signal declaration.');
         }
-        
-        const fullName = currentScope ? `${currentScope}.${name}` : name;
-        
-        symbolMap[id] = {
-          name: fullName,
-          shortName: name,
-          scope: currentScope,
-          width: width,
-          type: type
-        };
-        
-        // Store both fully qualified and relative names
+        const shortName = [reference, ...range].join(' ');
+        const scope = scopes.join('.');
+        if (!streams.has(id)) streams.set(id, []);
         result.signals.push({
-          id: id,
-          name: fullName,
-          shortName: name,
-          scope: currentScope, 
-          width: width,
-          type: type,
-          changes: []
+          id, type, width, scope, shortName, scopes: [...scopes],
+          name: [...scopes, shortName].join('.'),
+          changes: streams.get(id)
         });
-        
-        // Add to hierarchy tracking
-        let currentHierarchy = result.hierarchy;
-        const scopeParts = currentScope ? currentScope.split('.') : [];
-        
-        for (const scopePart of scopeParts) {
-          if (!currentHierarchy[scopePart]) {
-            currentHierarchy[scopePart] = {};
-          }
-          currentHierarchy = currentHierarchy[scopePart];
-        }
-        
-        if (!currentHierarchy.signals) {
-          currentHierarchy.signals = [];
-        }
-        
-        currentHierarchy.signals.push({
-          id: id,
-          name: name,
-          fullName: fullName
-        });
+        break;
       }
-      continue;
-    }
-    
-    if (line.startsWith('$enddefinitions')) {
-      inDefinitionSection = false;
-      continue;
-    }
-    
-    if (!inDefinitionSection) {
-      // Parse simulation time
-      if (line.startsWith('#')) {
-        currentTime = parseInt(line.substring(1));
-        continue;
-      }
-      
-      // Parse value changes
-      if (/^[01xzXZ].*/.test(line)) {
-        // Single bit value
-        const value = line[0];
-        const id = line.substring(1).trim();
-        
-        if (symbolMap[id]) {
-          const signalIndex = result.signals.findIndex(s => s.id === id);
-          if (signalIndex !== -1) {
-            result.signals[signalIndex].changes.push({
-              time: currentTime,
-              value: value
-            });
-          }
-        }
-      } else if (/^[bB].*/.test(line)) {
-        // Vector value
-        const parts = line.substring(1).trim().split(/\s+/);
-        if (parts.length >= 2) {
-          const value = parts[0];
-          const id = parts[1];
-          
-          if (symbolMap[id]) {
-            const signalIndex = result.signals.findIndex(s => s.id === id);
-            if (signalIndex !== -1) {
-              result.signals[signalIndex].changes.push({
-                time: currentTime,
-                value: value
-              });
-            }
-          }
-        }
-      }
+      default:
+        throw new Error(`Unsupported VCD declaration ${directive}.`);
     }
   }
-  
-  // Group signals by hierarchy
-  result.signals.sort((a, b) => {
-    // First sort by scope level (number of dots)
-    const aDepth = (a.scope ? a.scope.split('.').length : 0);
-    const bDepth = (b.scope ? b.scope.split('.').length : 0);
-    
-    if (aDepth !== bDepth) {
-      return aDepth - bDepth;
+  if (!definitionsComplete || result.signals.length === 0) {
+    throw new Error('The VCD is missing complete signal definitions.');
+  }
+
+  let dumpBlock = false;
+  for (let token = next(); token !== undefined; token = next()) {
+    if (token === '$comment') {
+      readDirective(token);
+      continue;
     }
-    
-    // Then sort by scope name
-    if (a.scope !== b.scope) {
-      return a.scope ? a.scope.localeCompare(b.scope || '') : -1;
+    if (token === '$dumpvars' || token === '$dumpall' || token === '$dumpon' || token === '$dumpoff') {
+      if (dumpBlock) throw new Error('Nested VCD dump block.');
+      dumpBlock = true;
+      continue;
     }
-    
-    // Then sort by signal name
-    return a.shortName.localeCompare(b.shortName);
-  });
-  
+    if (token === '$end' && dumpBlock) {
+      dumpBlock = false;
+      continue;
+    }
+    if (token.startsWith('#')) {
+      const time = Number(token.slice(1));
+      if (dumpBlock || !/^#\d+$/.test(token) || !Number.isSafeInteger(time) || time < result.endTime) {
+        throw new Error(`Invalid or unsupported VCD timestamp ${token}.`);
+      }
+      result.endTime = time;
+      continue;
+    }
+
+    let id;
+    let value;
+    if (/^[01xXzZ].+/.test(token)) {
+      id = token.slice(1);
+      value = token[0].toLowerCase();
+    } else if (/^[bB][01xXzZ]+$/.test(token)) {
+      id = next();
+      value = token.slice(1).toLowerCase();
+    } else if (/^[rR][+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(token)) {
+      id = next();
+      value = token.slice(1);
+    }
+    const changes = streams.get(id);
+    if (!changes) throw new Error(`Invalid VCD value change near tick ${result.endTime}.`);
+    changes.push({ time: result.endTime, value });
+  }
+  if (dumpBlock) throw new Error('Unterminated VCD dump block.');
+
   return result;
 }
 
-/**
- * Extract text content between current line and an end marker
- * @param {string[]} lines - All lines of the file
- * @param {number} startIndex - Starting line index
- * @param {string} endMarker - End marker to look for
- * @returns {string} Extracted content
- */
-function extractUntil(lines, startIndex, endMarker) {
-  let content = '';
-  let i = startIndex + 1;
-  
-  while (i < lines.length && !lines[i].trim().startsWith(endMarker)) {
-    content += lines[i] + '\n';
-    i++;
-  }
-  
-  return content.trim();
+function parseFile(filePath) {
+  return parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-module.exports = {
-  parse,
-  
-  /**
-   * Parse VCD file
-   * @param {string} filePath - Path to VCD file
-   * @returns {Object} Parsed VCD data
-   */
-  parseFile: function(filePath) {
-    const content = fs.readFileSync(filePath, 'utf8');
-    return parse(content);
-  }
-}; 
+module.exports = { parse, parseFile };

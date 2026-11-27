@@ -1,28 +1,30 @@
+const fs = require('fs').promises;
+const os = require('os');
 const path = require('path');
-const { runTests } = require('vscode-test');
+const { runTests } = require('@vscode/test-electron');
 
 async function main() {
+  const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'verilog-extension-test-'));
   try {
-    // The folder containing the Extension Manifest package.json
-    // Passed to `--extensionDevelopmentPath`
-    const extensionDevelopmentPath = path.resolve(__dirname, '../');
-
-    // The path to the extension test script
-    // Passed to --extensionTestsPath
-    const extensionTestsPath = path.resolve(__dirname, './suite/index');
-
-    // Download VS Code, unzip it and run the integration test
     await runTests({
-      extensionDevelopmentPath,
-      extensionTestsPath,
+      vscodeExecutablePath: process.env.VSCODE_EXECUTABLE_PATH,
+      extensionDevelopmentPath: path.resolve(__dirname, '..'),
+      extensionTestsPath: path.resolve(__dirname, 'suite/index'),
       launchArgs: [
-        '--disable-extensions'
+        '--user-data-dir', path.join(profile, 'user-data'),
+        '--extensions-dir', path.join(profile, 'extensions'),
+        '--disable-extensions',
+        '--disable-workspace-trust',
+        '--skip-welcome',
+        '--skip-release-notes'
       ]
     });
-  } catch (err) {
-    console.error('Failed to run tests');
-    process.exit(1);
+  } finally {
+    await fs.rm(profile, { recursive: true, force: true, maxRetries: 3 });
   }
 }
 
-main(); 
+main().catch(error => {
+  console.error('Failed to run tests', error);
+  process.exitCode = 1;
+});

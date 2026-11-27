@@ -2,9 +2,8 @@
   "name": "verilog-waveform-simulator",
   "displayName": "Verilog Waveform Simulator",
   "description": "Generate and visualize waveforms from Verilog testbenches",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "nithishkumar2022020",
-  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/nithishkumar2022020/Verilog-Waveform-Simulator"
@@ -22,8 +21,75 @@
     "onCommand:verilog-simulator.regenerateVcd",
     "onCommand:verilog-simulator.clearCache"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Simulations run Icarus Verilog on project testbenches."
+    }
+  },
   "contributes": {
+    "configuration": {
+      "title": "Verilog Waveform Simulator",
+      "properties": {
+        "verilogSimulator.timeoutSeconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 1,
+          "maximum": 3600,
+          "description": "Maximum duration for each compilation and simulation phase."
+        },
+        "verilogSimulator.project": {
+          "type": "object",
+          "scope": "resource",
+          "default": {},
+          "properties": {
+            "sources": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "includeDirectories": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "defines": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "inputFiles": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "top": {
+              "type": "string"
+            },
+            "language": {
+              "enum": [
+                "2005",
+                "2012"
+              ]
+            },
+            "dumpFile": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Assignment settings. Paths are relative to the workspace folder. List HDL source files in compilation order."
+        }
+      }
+    },
     "commands": [
       {
         "command": "verilog-simulator.generateWaveform",
@@ -31,7 +97,7 @@
       },
       {
         "command": "verilog-simulator.regenerateVcd",
-        "title": "Regenerate VCD File (Robust Mode)"
+        "title": "Regenerate VCD File"
       },
       {
         "command": "verilog-simulator.clearCache",
@@ -41,12 +107,12 @@
     "menus": {
       "editor/context": [
         {
-          "when": "resourceLangId == verilog",
+          "when": "resourceExtname == .v || resourceExtname == .sv",
           "command": "verilog-simulator.generateWaveform",
           "group": "verilog"
         },
         {
-          "when": "resourceLangId == verilog",
+          "when": "resourceExtname == .v || resourceExtname == .sv",
           "command": "verilog-simulator.regenerateVcd",
           "group": "verilog"
         }
@@ -55,34 +121,42 @@
     "languages": [
       {
         "id": "verilog",
-        "aliases": ["Verilog", "verilog"],
-        "extensions": [".v", ".vh", ".sv"]
+        "aliases": [
+          "Verilog",
+          "verilog"
+        ],
+        "extensions": [
+          ".v",
+          ".vh",
+          ".sv"
+        ]
       }
     ]
   },
   "scripts": {
     "lint": "eslint .",
-    "pretest": "npm run lint",
+    "pretest": "npm run lint && npm run esbuild-build",
     "test": "node ./test/runTest.js",
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "test:simulation": "mocha --ui tdd test/simulation.test.js",
     "esbuild-base": "esbuild ./extension.js --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
     "esbuild": "npm run esbuild-base -- --sourcemap",
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "esbuild-build": "npm run esbuild-base -- --sourcemap"
+    "esbuild-build": "npm run esbuild-base -- --sourcemap",
+    "vscode:prepublish": "npm run esbuild-base -- --minify"
   },
   "dependencies": {
     "plotly.js-dist": "^2.18.2"
   },
   "devDependencies": {
-    "@types/vscode": "^1.60.0",
-    "@types/node": "^16.11.7",
-    "@types/mocha": "^9.1.1",
     "@types/glob": "^7.1.4",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^16.11.7",
+    "@types/vscode": "^1.60.0",
+    "@vscode/test-electron": "^3.1.0",
     "esbuild": "^0.15.15",
     "eslint": "^8.14.0",
     "glob": "^7.2.0",
-    "mocha": "^9.2.2",
-    "vscode-test": "^1.6.1"
+    "mocha": "^9.2.2"
   },
   "keywords": [
     "verilog",
@@ -92,5 +166,6 @@
     "visualization"
   ],
   "author": "Nithish Kumar",
-  "license": "MIT"
+  "license": "MIT",
+  "icon": "images/icon.png"
 }
