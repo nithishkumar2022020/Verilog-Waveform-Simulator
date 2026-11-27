@@ -22,8 +22,13 @@ suite('VS Code extension', function () {
     const file = path.resolve(__dirname, '../samples/jk_flipflop/jk_ff.v');
     const document = await vscode.workspace.openTextDocument(file);
     for (const command of ['generateWaveform', 'regenerateVcd']) {
-      await vscode.window.showTextDocument(document);
-      await vscode.commands.executeCommand('verilog-simulator.' + command);
+      await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
+      const focusDeadline = Date.now() + 5000;
+      while (vscode.window.activeTextEditor?.document !== document && Date.now() < focusDeadline) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      await vscode.commands.executeCommand('verilog-simulator.' + command,
+        command === 'regenerateVcd' ? document.uri : undefined);
       let tab;
       const deadline = Date.now() + 5000;
       while (!tab && Date.now() < deadline) {

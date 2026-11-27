@@ -26,8 +26,10 @@ function activate(context) {
   const plotlyDirectory = vscode.Uri.joinPath(context.extensionUri, 'node_modules', 'plotly.js-dist');
   const plotlyFile = vscode.Uri.joinPath(plotlyDirectory, 'plotly.js');
 
-  async function generateWaveform() {
-    const document = vscode.window.activeTextEditor?.document;
+  async function generateWaveform(resource) {
+    const document = resource instanceof vscode.Uri
+      ? await vscode.workspace.openTextDocument(resource)
+      : vscode.window.activeTextEditor?.document;
     if (!vscode.workspace.isTrusted) {
       vscode.window.showErrorMessage('Trust this workspace before running a simulation.');
       return;
